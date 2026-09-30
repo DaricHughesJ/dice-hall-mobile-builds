@@ -1,0 +1,46 @@
+name: Build Dice Hall IPA for Signulous
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  iphone:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install public Capacitor tools
+        run: |
+          npm init -y
+          npm install @capacitor/core@8.5.2 @capacitor/ios@8.5.2 @capacitor/cli@8.5.2
+      - name: Verify and prepare already-public game
+        run: |
+          node prepare-public-game.mjs
+          npx cap add ios
+          node make-test-icon.mjs
+          npx cap sync ios
+      - name: Compile unsigned iPhone archive
+        run: |
+          xcodebuild -version
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -archivePath "$PWD/build/DiceHall.xcarchive" archive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+      - name: Package IPA
+        run: |
+          mkdir -p artifacts/Payload
+          cp -R build/DiceHall.xcarchive/Products/Applications/App.app artifacts/Payload/
+          test -f artifacts/Payload/App.app/App
+          cp www/build.json artifacts/web-build.json
+          cd artifacts
+          zip -r -y Farkle-Dice-Hall-signulous-unsigned.ipa Payload
+          rm -r Payload
+          shasum -a 256 *.ipa > SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dice-hall-signulous-ipa
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 14
