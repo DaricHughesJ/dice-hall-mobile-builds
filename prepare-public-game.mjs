@@ -12,7 +12,7 @@ if (injectedStart >= 0 && html.slice(injectedStart, injectedEnd).includes('windo
   html = html.slice(0, injectedStart) + html.slice(injectedEnd + '</script>'.length);
 }
 const hash = createHash('sha256').update(html).digest('hex');
-const expected = 'e9ddc63f8516f87742c58d77d833caede676f449262b8c8ef726a93e95006ce8';
+const expected = '2b698b3c47113cac8ac8f74d60e231e62e82dfcd59bb895d82c3896539a1182f';
 if (hash !== expected) throw new Error(`Public game has changed: ${hash}`);
 mkdirSync('www', { recursive: true });
 writeFileSync('www/index.html', html);
